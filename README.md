@@ -3,8 +3,8 @@
 Cmd that I use most
 
 
-Docker images
-Docker ps
+* Docker images
+* Docker ps
 docker ps -a
 docker  rmi <image-name>
 docker rm <cont-name>

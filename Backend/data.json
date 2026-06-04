@@ -1,0 +1,10 @@
+[
+  {
+    "name":"AWS",
+    "type":"Cloud"
+  },
+  {
+    "name":"Docker",
+    "type":"Container"
+  }
+]

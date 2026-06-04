@@ -1,0 +1,23 @@
+services:
+  backend:
+    build: ./Backend
+    container_name: backend
+    ports:
+      - "5000:5000"
+    env_file:
+      - ./Backend/.env
+    networks:
+      - docker-network
+
+  frontend:
+    build: ./Frontend
+    container_name: frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    networks:
+      - docker-network
+
+networks:
+  docker-network:

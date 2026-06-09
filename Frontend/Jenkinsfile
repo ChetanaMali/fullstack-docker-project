@@ -1,0 +1,32 @@
+pipeline{
+    agent any
+    stages{
+        stage('Stop & Remove Old Container'){
+            steps{
+                sh '''
+                echo 'Stop & Remove Old Container'
+                Docker stop frontend || true
+                Docker rm frontend || true
+                '''
+            }
+        }
+        stage('build image'){
+            steps{
+                sh '''
+                echo 'build image...'
+                cd $WORKSPACE/Frontend
+                docker build -t frontend .
+                '''
+            }
+                
+        }
+        stage('Run Container'){
+            steps{
+                sh '''
+                echo 'Run container'
+                docker run -d -p 9000:3000 --name frontend frontend
+                '''
+            }
+        }
+    }
+}

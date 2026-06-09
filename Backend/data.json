@@ -6,5 +6,9 @@
   {
     "name":"Docker",
     "type":"Container"
+  },
+  {
+    "name":"Kubernetes",
+    "type":"Container Orchestration"
   }
 ]

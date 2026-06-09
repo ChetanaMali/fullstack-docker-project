@@ -1,118 +1,207 @@
-# fullstack-docker-project
+# CI/CD Pipeline Setup
 
-Cmd that I use most in Docker
+## Objective
+Deploy **Express (Node.js)** and **Flask (Python)** applications on AWS EC2 using Jenkins, Docker, GitHub Webhooks, and PM2.
+
+---
+## Documentation
+
+- [Documentation](https://docs.google.com/document/d/1kPHjlIKQpuOuuUFcUKLj69pDIamMTepWk50qnEhWW44/edit?usp=sharing)
+- [Github URL](https://github.com/ChetanaMali/fullstack-docker-project)
+
+---
+## Tools Used
+
+| Tool | Purpose |
+|------|---------|
+| **AWS EC2** | Ubuntu server to host all services |
+| **Jenkins** | CI/CD automation server |
+| **Docker** | Containerization of frontend & backend apps |
+| **GitHub** | Source code repository with webhook integration |
+| **PM2** | Process manager to keep apps running after instance restart |
+
+---
+
+## Part 1 — EC2 Setup & Direct Deployment
+
+### Steps Followed
+
+```bash
+# 1. Create an EC2 instance with Ubuntu AMI and SSH into it
+
+# 2. Update the system
+sudo apt update && sudo apt upgrade -y
+
+# 3. Verify pre-installed tools
+python3 --version
+git -v
+
+# 4. Install Node.js
+sudo apt install nodejs -y
+
+# 5. Clone the repository
+git clone https://github.com/ChetanaMali/fullstack-docker-project
+
+# 6. Install Backend dependencies (Flask)
+cd Backend
+pip install -r requirements.txt
+
+# 7. Install Frontend dependencies (Express)
+cd Frontend
+npm install
+
+# 8. Run apps manually to test
+cd Frontend && npm start        # Express on port 3000
+cd Backend && python app.py     # Flask on port 5000
+
+# 9. Install PM2 globally
+sudo npm install -g pm2
+
+# 10. Start apps with PM2
+cd Frontend && pm2 start server.js
+cd Backend && pm2 start app.py
+pm2 list
+```
+
+### Security Group Configuration
+
+| Port | Protocol | Purpose |
+|------|----------|---------|
+| `22` | SSH | Remote access |
+| `8080` | TCP | Jenkins |
+| `3000` | TCP | Express (Node.js) |
+| `5000` | TCP | Flask (Python) |
+| `9000` | TCP | Express via Docker |
+| `8000` | TCP | Flask via Docker |
+
+---
+
+### Express Deployment on EC2 (Port 3000)
+- Deployed Express (Node.js) application directly on EC2 on port `3000`
+- Used **PM2** as a process manager so the app keeps running even after the instance restarts
+
+---
+
+### Flask Deployment on EC2 (Port 5000)
+- Deployed Flask (Python) application directly on EC2 on port `5000`
+- Used **PM2** to keep the Flask app running persistently after instance restart
+
+---
+
+## Part 2 — Jenkins + Docker CI/CD Pipeline
+
+### Jenkins Installation
+- Created a GitHub Gist with all steps and commands to install Jenkins
+-  https://gist.github.com/ChetanaMali/849f4a01ee49d42fdc879593e0f475bb
+
+---
+
+### Docker Installation
+- Created a GitHub Gist with all steps and commands to install Docker
+- https://gist.github.com/ChetanaMali/16a7f4199814298fff132a3403563f93
+
+---
+
+### Add Jenkins User to Docker Group
+
+```bash
+sudo usermod -aG docker jenkins
+sudo systemctl restart jenkins
+```
+
+---
+
+### GitHub Webhook Integration
+- Configured GitHub webhook to automatically trigger Jenkins pipeline on every `git push`
+- Jenkins job → **Build Triggers** → ✅ GitHub hook trigger for GITScm polling
+
+---
+
+### Flask Pipeline — Freestyle
+- Created a **Freestyle pipeline** in Jenkins for the Flask application
+- Connected GitHub repository and enabled webhook trigger to automate deployment
+
+---
+
+### Express Pipeline — Jenkinsfile
+
+- Created a **Pipeline job** in Jenkins for the Express application
+- Created a `Jenkinsfile` inside the project repository
+- Provided the Jenkinsfile location in the Jenkins pipeline configuration
+
+```groovy
+pipeline {
+    agent any
+    stages {
+        stage('Stop & Remove Old Container') {
+            steps {
+                sh '''
+                    docker stop frontend || true
+                    docker rm frontend || true
+                '''
+            }
+        }
+        stage('Build Image') {
+            steps {
+                sh 'cd $WORKSPACE/Frontend && docker build -t frontend .'
+            }
+        }
+        stage('Run Container') {
+            steps {
+                sh 'docker run -d -p 9000:3000 --name frontend frontend'
+            }
+        }
+    }
+}
+```
+
+---
+
+### Express Deployment using Docker (Port 9000)
+- Containerized the Express app using Docker
+- Deployed on port `9000` to verify Docker-based deployment works independently
+- Used Jenkins pipeline to fully automate the build and deployment process
+
+---
+
+### Flask Deployment using Docker (Port 8000)
+- Containerized the Flask app using Docker
+- Deployed on port `8000` to verify Docker-based deployment works independently
+- Used Jenkins pipeline to fully automate the build and deployment process
+
+---
+
+## Pipeline Flow
+
+```
+Git Push → GitHub Webhook → Jenkins Triggers
+                ↓
+          Pull Latest Code
+                ↓
+    Stop & Remove Old Container
+                ↓
+        Build Docker Image
+                ↓
+        Run New Container
+                ↓
+          App Live on EC2
+```
+
+---
+
+## Issues Faced & Resolved
+
+| Issue | Solution |
+|-------|----------|
+| Docker permission denied in pipeline | Added `jenkins` user to `docker` group |
+| Dockerfile not found in pipeline | Used `cd $WORKSPACE/Frontend` in shell script |
 
 
-* docker images
-* docker ps
-* docker ps -a
-* docker  rmi <image-name>
-* docker rm <cont-name>
-* docker pull <image-name>
-* docker build -t <cont-name:tag> . (build image from docker file)
-* docker run -it -p 3000:3000 <image-name>  (run the container and also bind the port)
-* docker-compose up 
+---
 
+## Result
 
+Successfully deployed both Express and Flask applications on AWS EC2 using two approaches:
 
-
-#Deploy Application on EC2 Instance
-steps that i follow:
-1. Create an EC2 instance with Ubuntu AMI.
-2. DO SSH 
-3. sudo apt update && apt upgrade -y
-4. check Python3 --version & git
-5. install node
-6. git clone 
-7. cd Backend -> pip install -r requirements.txt (install all requirements)
-8. cd Frontend -> npm install (install all dependencies)
-9. frountend -> npm start 
-10. backend -> python app.py
-11. sudo npm install -g pm2 (install pm2)
-12.  cd Frontend/ -> ls ->  pm2 start server.js -> pm2 list
-13. cd Backend/ -> pm2 start app.py -> pm2 list
-14. Sec Group
-    22	    SSH
-    8080	Jenkins
-    5000	Flask
-    3000	Express
-
-
- python -version
-    2  python --version
-    3  python3 --version
-    4  node --version
-    5  git -v
-    6  clear
-    7  sudo npm install
-    8  sudo node install
-    9  sudo apt update
-   10  sudo apt upgrade
-   11  sudo apt install nodejs
-   12  node -v
-   13  git clone https://github.com/ChetanaMali/fullstack-docker-project.git
-   14  ls
-   15  cd fullstack-docker-project/
-   16  ls
-   17  cd bac
-   18  cd Backend/
-   19  ls
-   20  sudo pip install -r requirement.txt
-   21  pip
-   22  sudo pip install
-   23  python3 -m pip --version
-   24  sudo apt update
-   25  sudo apt install python3-pip -y
-   26  df -h
-   27  pip3 --version
-   28  sudo pip install -r requirement.txt
-   29  python3 -m pip install -r requirements.txt
-   30  sudo apt update
-   31  sudo apt install python3-venv -y
-   32  cd flask-project
-   33  python3 -m venv venv
-   34  cd flask-project
-   35  ls
-   36  cd/`
-cd/~
-   37  cd/~
-   38  cd ..
-   39  cd fullstack-docker-project/
-   40  python3 -m venv venv
-   41  source venv/bin/activate
-   42  pip install -r requirements.txt
-   43  cd Backend/
-   44  pip install -r requirements.txt
-   45  ls
-   46  pip install -r requirement.txt
-   47  cd ..
-   48  npm install
-   49  sudo apt install npm
-   50  cd Backend/
-   51  ls
-   52  python app.py
-   53  cd ..
-   54  cd Frontend/
-   55  ls
-   56  sudo npm install
-   57  sudo npm start
-   58  cd ..
-   59  sudo npm install -g pm2
-   60  cd Frontend/
-   61  ls
-   62  pm2 start server.js
-   63  pm2 list
-   64  cd ..
-   65  cd Backend/
-   66  pm2 start app.py
-   67  pm2 list
-   68  pm2 start --name backend
-   69  pm2 --name backend
-   70  pm2 list
-   71  cd ..
-   72  pm2 save
-   73  pm2 startup
-   74  history
-
-   
-#Jenkin CICD 
+- ✅ **Direct deployment** with PM2 for process persistence
+- ✅ **Docker-based deployment** with Jenkins CI/CD pipeline triggered automatically via GitHub webhooks
